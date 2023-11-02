@@ -1,0 +1,11 @@
+{
+    "case": "p70Case6",
+    "discPorosity": 0.7,
+    "reducedSurgeFrequency": 0.0,
+    "reducedSurgeAmplitude": 0.0,
+    "freestreamVelocity": 3.0,
+    "phases": 1,
+    "axialInductionDiscCentre": [
+        0.16626133106614538
+    ]
+}
