@@ -44,9 +44,8 @@ This repository contains the scripts used for processing data obtained from load
 <!--- Provide information about authors, maintainers and collaborators specifying contact details and role within the project, e.g.:   
     * Full name ([@GitHub username](https://github.com/username), [ORCID](https://doi.org/...), email address, institution/employer (role)  
 -->
-Kiran Sripathy (https://github.com/ksripathy)
-OrcID: https://orcid.org/0009-0000-1669-7533
-ksripathy@icloud.com
+Kiran Sripathy ([@ksripathy](https://github.com/ksripathy), [ORCID](https://orcid.org/0009-0000-1669-7533)),
+ksripathy@icloud.com,
 PhD Candidate, TU Delft
 
 ## Table of Contents
