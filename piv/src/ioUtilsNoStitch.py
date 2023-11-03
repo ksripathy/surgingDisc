@@ -4,6 +4,7 @@ from pivFields import planarPIVField
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
 from typing import Dict
+from scipy.io import savemat
 
 class caseData:
     
@@ -53,14 +54,6 @@ class caseData:
         self.fstreamVelc = caseDict[caseNo, 2]
         self.discDia = 200
         
-            
-        for file in fileList:
-                        
-            phaseID = int(file.split(".")[0].split("_")[1])
-            setattr(self, f"phase{phaseID}", planarPIVField(file))
-            
-        #self.axialIndDistr = self.axialInd()
-        
         #assigning axial loication of disc
         if self.discPor == 0.45 and self.redFreq != 0.0:
             
@@ -82,11 +75,33 @@ class caseData:
             discAxialLocs = np.array([p70StaticDiscLoc])
             discCentreLoc = staticDiscCentreLoc
             
-        self.cycleAxialInd = self.cycleAxialIndDistr(discCentreLoc, discAxialLocs)
+        self.matDict = {"case" : self.uid[:8], "k" : self.redFreq, "amp" : self.redAmp, 
+                       "Vinf" : self.fstreamVelc, "rCentre" : discCentreLoc, "xCentre" : discAxialLocs}        
+            
+        for file in fileList:
+                        
+            phaseID = int(file.split(".")[0].split("_")[1])
+            temp = planarPIVField(file)
+            temp.combine2Frames()
+            self.matDict |= {f"phase{phaseID}" : {}}
+            self.matDict[f"phase{phaseID}"] |= {"X" : temp.combinedFrames.gridPosX}
+            self.matDict[f"phase{phaseID}"] |= {"Y" : temp.combinedFrames.gridPosY}
+            self.matDict[f"phase{phaseID}"] |= {"Vx" : temp.combinedFrames.gridVelX}
+            self.matDict[f"phase{phaseID}"] |= {"Vr" : temp.combinedFrames.gridVelY}
+            self.matDict[f"phase{phaseID}"] |= {"Vmag" : temp.combinedFrames.gridVel}
+            setattr(self, f"phase{phaseID}", temp)
+            
+        #self.axialIndDistr = self.axialInd()
+            
+        #self.cycleAxialInd = self.cycleAxialIndDistr(discCentreLoc, discAxialLocs)
             
         #Compute event times for dynamic cases only
         if self.redFreq != 0.0:
-            self.eventTimes(discAxialLocs)    
+            self.eventTimes(discAxialLocs)
+            
+    def saveAsMat(self, fileDir):
+        
+        savemat(fileDir + "/" + self.uid[:8] + ".mat", self.matDict)
            
     def axialInd(self):
 
