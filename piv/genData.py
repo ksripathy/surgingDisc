@@ -9,7 +9,7 @@ plotDir = os.path.join(homeDir,"plots")
 dataDir = os.path.join(homeDir,"data")
 
 #Add src folder to python path
-sys.path.append(srcDir)
+#sys.path.append(srcDir)
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -57,7 +57,7 @@ p70Case7.save(plotDir)'''
 p45Case0 = caseData(dataDir + "/tecPlotNoStitch/p45Case0*")
 p45Case0.saveAsMat(dataDir + "/matlab")
 '''p45Case1 = caseData(dataDir + "/tecPlotNoStitch/p45Case1*")
-p45Case1.save(plotDir + "/noStitchRes")
+p45Case1.saveAsMat(dataDir + "/matlab")
 p45Case2 = caseData(dataDir + "/tecPlotNoStitch/p45Case2*")
 #p45Case2.save(plotDir + "/noStitchRes")
 p45Case3 = caseData(dataDir + "/tecPlotNoStitch/p45Case3*")
@@ -65,10 +65,10 @@ p45Case3.save(plotDir + "/noStitchRes")
 p45Case4 = caseData(dataDir + "/tecPlotNoStitch/p45Case4*")
 p45Case4.save(plotDir + "/noStitchRes")
 p45Case5 = caseData(dataDir + "/tecPlotNoStitch/p45Case5*")
-p45Case5.save(plotDir + "/noStitchRes")
+p45Case5.save(plotDir + "/noStitchRes")'''
 p45Case6 = caseData(dataDir + "/tecPlotNoStitch/p45Case6*")
-p45Case6.save(plotDir + "/noStitchRes")
-p45Case7 = caseData(dataDir + "/tecPlotNoStitch/p45Case7*")
+p45Case6.saveAsMat(dataDir + "/matlab")
+'''p45Case7 = caseData(dataDir + "/tecPlotNoStitch/p45Case7*")
 p45Case7.save(plotDir + "/noStitchRes")
 
 p70Case0 = caseData(dataDir + "/tecPlotNoStitch/p70Case0*")

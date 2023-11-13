@@ -2,8 +2,8 @@ import numpy as np
 from scipy.interpolate import interpn
 from scipy.stats import linregress 
 import matplotlib.pyplot as plt
-from pivFrames import pivFrames2D
-from miscTools import nearestValueIndex
+from src.pivFrames import pivFrames2D
+from src.miscTools import nearestValueIndex
 
 class planarPIVField():
     

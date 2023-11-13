@@ -1,10 +1,11 @@
 import numpy as np
 import glob
-from pivFields import planarPIVField
+from src.pivFields import planarPIVField
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
 from typing import Dict
 from scipy.io import savemat
+from src.miscTools import nearestValueIndex
 
 class caseData:
     
@@ -74,30 +75,42 @@ class caseData:
             
             discAxialLocs = np.array([p70StaticDiscLoc])
             discCentreLoc = staticDiscCentreLoc
-            
+                
         self.matDict = {"case" : self.uid[:8], "k" : self.redFreq, "amp" : self.redAmp, 
-                       "Vinf" : self.fstreamVelc, "rCentre" : discCentreLoc, "xCentre" : discAxialLocs}        
+                       "Vinf" : self.fstreamVelc, "rcIndex" : 0, "xcIndex" : np.zeros(len(discAxialLocs))}
+        
+        #Compute event times for dynamic cases only
+        if self.redFreq != 0.0:
+            self.eventTimes(discAxialLocs)
+            self.matDict["phaseTimes"] = self.cumElapsedTimes        
             
-        for file in fileList:
+        for i, file in enumerate(fileList):
                         
             phaseID = int(file.split(".")[0].split("_")[1])
             temp = planarPIVField(file)
             temp.combine2Frames()
-            self.matDict |= {f"phase{phaseID}" : {}}
-            self.matDict[f"phase{phaseID}"] |= {"X" : temp.combinedFrames.gridPosX}
-            self.matDict[f"phase{phaseID}"] |= {"Y" : temp.combinedFrames.gridPosY}
-            self.matDict[f"phase{phaseID}"] |= {"Vx" : temp.combinedFrames.gridVelX}
-            self.matDict[f"phase{phaseID}"] |= {"Vr" : temp.combinedFrames.gridVelY}
-            self.matDict[f"phase{phaseID}"] |= {"Vmag" : temp.combinedFrames.gridVel}
+            
+            phaseVinf = temp.combinedFrames.recFstreamVelc()
+            
+            frameAxialLocs = temp.frameAxialLocs
+            frameSpanLocs = temp.frameSpanLocs
+            
+            self.matDict["deltaX"] = (frameAxialLocs[1] - frameAxialLocs[0]) * 1e-3
+            self.matDict["deltaY"] = (frameSpanLocs[0] - frameSpanLocs[1]) * 1e-3
+            self.matDict["rcIndex"] = nearestValueIndex(frameSpanLocs, discCentreLoc) + 1
+            self.matDict["xcIndex"][i] = nearestValueIndex(frameAxialLocs, discAxialLocs[i]) + 1 
+            self.matDict |= {f"phase{phaseID+1}" : {}}
+            self.matDict[f"phase{phaseID+1}"] |= {"X" : temp.combinedFrames.gridPosX*1e-3}
+            self.matDict[f"phase{phaseID+1}"] |= {"Y" : temp.combinedFrames.gridPosY*1e-3}
+            self.matDict[f"phase{phaseID+1}"] |= {"Vx" : temp.combinedFrames.gridVelX/phaseVinf}
+            self.matDict[f"phase{phaseID+1}"] |= {"Vr" : temp.combinedFrames.gridVelY/phaseVinf}
+            self.matDict[f"phase{phaseID+1}"] |= {"Vmag" : temp.combinedFrames.gridVel/phaseVinf}
+            
             setattr(self, f"phase{phaseID}", temp)
             
         #self.axialIndDistr = self.axialInd()
             
         #self.cycleAxialInd = self.cycleAxialIndDistr(discCentreLoc, discAxialLocs)
-            
-        #Compute event times for dynamic cases only
-        if self.redFreq != 0.0:
-            self.eventTimes(discAxialLocs)
             
     def saveAsMat(self, fileDir):
         
