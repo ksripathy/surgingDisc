@@ -1,6 +1,5 @@
 import numpy as np
 from scipy import signal
-import matplotlib.pyplot as plt
 
 def movingAverage(a, n=2):
     
@@ -214,6 +213,7 @@ def animVortUpdate(frame, *fargs):
             funcReturnList.append(plotObj.tipVortLines[j])
             
         return tuple(funcReturnList)
+
             
             
             

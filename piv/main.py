@@ -5,7 +5,7 @@ import sys
 #Configuring relative file locations
 homeDir = os.path.dirname(__file__)
 srcDir = os.path.join(homeDir,"src")
-plotDir = os.path.join(homeDir,"plots")
+plotDir = os.path.join(homeDir,"plots/noStitchRes")
 dataDir = os.path.join(homeDir,"data")
 
 #Add src folder to python path
@@ -61,7 +61,6 @@ ax2[0].set_ylabel(r"a [-]")
 plt.figlegend(loc="upper center", ncols=4, bbox_to_anchor=(0.5,1.05))
 #fig2.savefig(plotDir + "/p45inductionRevised.png", dpi=300, bbox_inches="tight", pad_inches=0)
 
-fig3, ax3 = plt.subplots()
 ax2[1].plot(p70Case0.ndimTimes, p70Case0.axialInductionDiscCentre, marker = "x", color = "r")
 ax2[1].plot(p70Case1.ndimTimes, p70Case1.axialInductionDiscCentre, marker = "x", color = "g")
 ax2[1].plot(p70Case2.ndimTimes, p70Case2.axialInductionDiscCentre, marker = "x", color = "b")
@@ -90,6 +89,17 @@ fig1, ax1 = plt.subplots()
 ax1.plot(axialLocs72, velXDistr72)
 #ax1.plot(axialLocs84, velXDistr84)
 plt.show()'''
+
+fig3, ax3 = plt.subplots()
+ax3.plot(p70Case0.ndimTimes, p70Case0.axialInductionDiscCentre, marker = "x", color = "r", label=f"k = {p70Case0.reducedSurgeFrequency}")
+ax3.plot(p70Case2.ndimTimes, p70Case2.axialInductionDiscCentre, marker = "x", color = "g", label=f"k = {p70Case2.reducedSurgeFrequency}")
+ax3.plot(p70Case4.ndimTimes, p70Case4.axialInductionDiscCentre, marker = "x", color = "b", label=f"k = {p70Case4.reducedSurgeFrequency}", linestyle = "--")
+ax3.axhline(p70Case6.axialInductionDiscCentre, color = "k", label=f"k =" + f"{p70Case6.reducedSurgeFrequency}")
+ax3.axhline(p70Case7.axialInductionDiscCentre, color = "k", linestyle = "--", label=f"k =" + f"{p70Case7.reducedSurgeFrequency}")
+ax3.legend()
+ax3.grid()
+ax3.set_xlabel(r"t/T [-]")
+ax3.set_ylabel(r"a [-]")
 
 #discLoc60, discVel60 = testCase.phase6.velDisc(60.0)
 #discLoc72, discVel72 = testCase.phase6.velDisc(72.0, discLoc60)

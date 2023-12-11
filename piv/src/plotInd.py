@@ -89,10 +89,10 @@ class plotInd:
         label2 = f"k = {self.dynamicData2.reducedSurgeFrequency}, " + r"$x_{amp}/D$ = " + f"{self.dynamicData2.reducedSurgeAmplitude}"
         label3 = f"k = {self.dynamicData3.reducedSurgeFrequency}, " + r"$x_{amp}/D$ = " + f"{self.dynamicData3.reducedSurgeAmplitude}"
         
-        axsObj.plot(xData, yData, marker="x", label=label, linestyle = "--", color="k")
-        axsObj.plot(xDynamicData1, yData, marker="x", label=label1)
-        axsObj.plot(xDynamicData2, yData, marker="x", label=label2)
-        axsObj.plot(xDynamicData3, yData, marker="x", label=label3)
+        axsObj.plot(xData, yData, marker="x", label=label, linestyle = "-", color="k")
+        #axsObj.plot(xDynamicData1, yData, marker="x", label=label1)
+        #axsObj.plot(xDynamicData2, yData, marker="x", label=label2)
+        #axsObj.plot(xDynamicData3, yData, marker="x", label=label3)
         
         axsObj.grid()
         axsObj.legend()

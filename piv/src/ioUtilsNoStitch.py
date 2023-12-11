@@ -48,23 +48,24 @@ class caseData:
         staticDiscCentreLoc = 8.069
         
         self.uid = tecFile.split("/")[-1].split(".")[0]
+        self.case=self.uid[:8]
         self.discPor = float(self.uid[1:3])/100
-        caseNo = int(self.uid[7])
-        self.redFreq = caseDict[caseNo, 0]
-        self.redAmp = caseDict[caseNo, 1]
-        self.fstreamVelc = caseDict[caseNo, 2]
+        self.caseNo = int(self.uid[7])
+        self.redFreq = caseDict[self.caseNo, 0]
+        self.redAmp = caseDict[self.caseNo, 1]
+        self.fstreamVelc = caseDict[self.caseNo, 2]
         self.discDia = 200
         
         #assigning axial loication of disc
         if self.discPor == 0.45 and self.redFreq != 0.0:
             
-            discAxialLocs = p45DiscLoc[caseNo,:]
-            discCentreLoc = p45DiscCentreLoc[caseNo]
+            discAxialLocs = p45DiscLoc[self.caseNo,:]
+            discCentreLoc = p45DiscCentreLoc[self.caseNo]
             
         elif self.discPor == 0.70 and self.redFreq != 0.0:
             
-            discAxialLocs = p70DiscLoc[caseNo,:]
-            discCentreLoc = p70DiscCentreLoc[caseNo]
+            discAxialLocs = p70DiscLoc[self.caseNo,:]
+            discCentreLoc = p70DiscCentreLoc[self.caseNo]
             
         elif self.discPor == 0.45 and self.redFreq == 0.0:
             
@@ -90,7 +91,7 @@ class caseData:
             temp = planarPIVField(file)
             temp.combine2Frames()
             
-            phaseVinf = temp.combinedFrames.recFstreamVelc()
+            setattr(temp.combinedFrames,"phaseVinf",np.abs(temp.combinedFrames.recFstreamVelc()))
             
             frameAxialLocs = temp.frameAxialLocs
             frameSpanLocs = temp.frameSpanLocs
@@ -102,9 +103,10 @@ class caseData:
             self.matDict |= {f"phase{phaseID+1}" : {}}
             self.matDict[f"phase{phaseID+1}"] |= {"X" : temp.combinedFrames.gridPosX*1e-3}
             self.matDict[f"phase{phaseID+1}"] |= {"Y" : temp.combinedFrames.gridPosY*1e-3}
-            self.matDict[f"phase{phaseID+1}"] |= {"Vx" : temp.combinedFrames.gridVelX/phaseVinf}
-            self.matDict[f"phase{phaseID+1}"] |= {"Vr" : temp.combinedFrames.gridVelY/phaseVinf}
-            self.matDict[f"phase{phaseID+1}"] |= {"Vmag" : temp.combinedFrames.gridVel/phaseVinf}
+            self.matDict[f"phase{phaseID+1}"] |= {"Vx" : temp.combinedFrames.gridVelX}
+            self.matDict[f"phase{phaseID+1}"] |= {"Vr" : temp.combinedFrames.gridVelY}
+            self.matDict[f"phase{phaseID+1}"] |= {"Vmag" : temp.combinedFrames.gridVel}
+            self.matDict[f"phase{phaseID+1}"] |= {"Vinf" : temp.combinedFrames.phaseVinf}
             
             setattr(self, f"phase{phaseID}", temp)
             
