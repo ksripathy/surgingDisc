@@ -1,6 +1,14 @@
 import numpy as np
 from scipy import signal
 
+def optzFunction(phaseAngle, ioUtilsObj):
+    
+    from src.forcesRevised import aeroForces
+        
+    temp = aeroForces(ioUtilsObj.windObj, ioUtilsObj.noWindObj, 2, phaseAngle)
+    
+    return -np.max(temp.cycleAvgFiltForce)
+
 def movingAverage(a, n=2):
     
     ret = np.cumsum(a, dtype=float)
@@ -26,6 +34,14 @@ def lagShift(sig1, sig2):
     lags = signal.correlation_lags(sig1.size, sig2.size)
     
     return lags[np.argmax(corr)], max(corr)
+
+#Function for finding time shift between signals based on max arg location
+def lagShiftv2(sig1, sig2):
+    
+    argMax1 = np.argmax(sig1)
+    argMax2 = np.argmax(sig2)
+    
+    return argMax1 - argMax2
 
 #Low pass filter function
 def lowPassFilt(sig, sampleFreq, cutOffFreq):
@@ -107,6 +123,39 @@ def cycleAvgStd(cyclesArray):
         resStd[i] = np.std(temp)
         
     return resAvg, resStd
+
+#Function to average data pairs in an array whose values are symmetrically distributed wrt central index(midpoint)
+def symAvgArray(data):
+    
+    size = len(data)
+    
+    if size % 2:
+        
+        midIndex = int((size+1)/2) - 1
+        
+        res = np.zeros(midIndex+1)
+        
+        for i,j in zip(np.arange(len(res)),np.flip(np.arange(len(res)))):
+            
+            if j == midIndex:
+                
+                res[i] = data[j]
+                
+            else:
+                
+                res[i] = 0.5*(data[j] + data[-j-1])
+                
+    else:
+        
+        midIndex = int(size/2) - 1
+        
+        res = np.zeros(midIndex+1)
+        
+        for i,j in zip(np.arange(len(res)),np.flip(np.arange(len(res)))):
+            
+            res[i] = 0.5*(data[j] + data[-j-1])
+            
+    return res
 
 #Update function for cycle data animation
 def animFrameUpdate(frame, *fargs):
