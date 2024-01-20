@@ -2,8 +2,8 @@ import numpy as np
 from scipy.interpolate import interpn
 from scipy.stats import linregress 
 import matplotlib.pyplot as plt
-from src.pivFrames import pivFrames2D
-from src.miscTools import nearestValueIndex
+from piv.src.pivFrames import pivFrames2D
+from piv.src.miscTools import nearestValueIndex
 
 class planarPIVField():
     
@@ -66,11 +66,17 @@ class planarPIVField():
         
         for axialIndex in range(startAxialIter, endAxialIter):
             
+            if bool(frameObj.gridIsValid[spanIndex, axialIndex]) - bool(frameObj.gridIsValid[spanIndex, axialIndex-1]) == -1:
+                ret1 = axialIndex
+                break
+        
+        for axialIndex in range(startAxialIter, endAxialIter):
+            
             if bool(frameObj.gridIsValid[spanIndex, axialIndex]) - bool(frameObj.gridIsValid[spanIndex, axialIndex-1]) == 1:
-                ret = axialIndex
+                ret2 = axialIndex
                 break
             
-        return ret
+        return [ret1, ret2]
     
     #Provide odd number for distribution size to obtain induction at disc centre
     def discVelXDistr(self, frameNo, discCentreLoc, discAxialLoc, intpWinSize=10, distrSize=21):

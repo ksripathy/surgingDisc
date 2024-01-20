@@ -1,11 +1,11 @@
 import numpy as np
 import glob
-from src.pivFields import planarPIVField
+from piv.src.pivFields import planarPIVField
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
 from typing import Dict
 from scipy.io import savemat
-from src.miscTools import nearestValueIndex
+from piv.src.miscTools import nearestValueIndex
 
 class caseData:
     
@@ -15,14 +15,14 @@ class caseData:
         self.phaseQty = len(fileList)
         
         #Lookup table for case metadata
-        caseDict = np.array([[1.0, 0.250, 3.0],
-                             [2.0, 0.125, 3.0], 
-                             [2.0, 0.250, 3.0], 
-                             [2.0, 0.375, 2.0], 
-                             [3.0, 0.250, 2.0],
-                             [2.7, 0.375, 2.0],
-                             [0.0, 0.000, 3.0],
-                             [0.0, 0.000, 2.0]])
+        caseDict = np.array([[1.0, 0.250, 3.0, 2.3906, 5.0e-2],
+                             [2.0, 0.125, 3.0, 4.7830, 2.5e-2], 
+                             [2.0, 0.250, 3.0, 4.7830, 5.0e-2], 
+                             [2.0, 0.375, 2.0, 3.1875, 7.5e-2], 
+                             [3.0, 0.250, 2.0, 4.7830, 5.0e-2],
+                             [2.7, 0.375, 2.0, 4.3038, 7.5e-2],
+                             [0.0, 0.000, 3.0, 0.0000, 0.0e-2],
+                             [0.0, 0.000, 2.0, 0.0000, 0.0e-2]])
         
         #Lookup table for disc location
         p45DiscLoc = np.array([[3.855, -19.480, -27.204, -17.344, 7.470, 40.008, 66.630, 75.350, 63.672, 35.407, 3.362, -19.973],
@@ -42,6 +42,9 @@ class caseData:
         p45DiscCentreLoc = np.array([5.932, 5.932, 5.932, 8.069, 8.069, 8.069])
         p70DiscCentreLoc = np.array([8.069, 8.069, 8.069, 6.369, 6.369, 6.369])
         
+        p45Density = np.array([1.190, 1.186, 1.187, 1.202, 1.195, 1.200, 1.194, 1.195])
+        p70Density = np.array([1.196, 1.199, 1.198, 1.192, 1.194, 1.189, 1.195, 1.195])
+        
         p45StaticDiscLoc = 25.683
         p70StaticDiscLoc = 26.012
         
@@ -54,6 +57,9 @@ class caseData:
         self.redFreq = caseDict[self.caseNo, 0]
         self.redAmp = caseDict[self.caseNo, 1]
         self.fstreamVelc = caseDict[self.caseNo, 2]
+        self.freq = caseDict[self.caseNo, 3]
+        self.amp = caseDict[self.caseNo, 4]
+        self.phaseVinf = np.zeros(self.phaseQty)
         self.discDia = 200
         
         #assigning axial loication of disc
@@ -61,29 +67,37 @@ class caseData:
             
             discAxialLocs = p45DiscLoc[self.caseNo,:]
             discCentreLoc = p45DiscCentreLoc[self.caseNo]
+            self.rhoInf = p45Density[self.caseNo]
             
         elif self.discPor == 0.70 and self.redFreq != 0.0:
             
             discAxialLocs = p70DiscLoc[self.caseNo,:]
             discCentreLoc = p70DiscCentreLoc[self.caseNo]
+            self.rhoInf = p70Density[self.caseNo]
             
         elif self.discPor == 0.45 and self.redFreq == 0.0:
             
             discAxialLocs = np.array([p45StaticDiscLoc])
             discCentreLoc = staticDiscCentreLoc
+            self.rhoInf = p45Density[self.caseNo]
             
         elif self.discPor == 0.70 and self.redFreq == 0.0:
             
             discAxialLocs = np.array([p70StaticDiscLoc])
             discCentreLoc = staticDiscCentreLoc
+            self.rhoInf = p70Density[self.caseNo]
                 
-        self.matDict = {"case" : self.uid[:8], "k" : self.redFreq, "amp" : self.redAmp, 
-                       "Vinf" : self.fstreamVelc, "rcIndex" : 0, "xcIndex" : np.zeros(len(discAxialLocs))}
+        self.matDict = {"caseID" : self.uid[:8], "por" : self.discPor, "k" : self.redFreq, "amp" : self.redAmp, 
+                       "Vinf" : self.fstreamVelc, "freq" : self.freq, "amp" : self.amp, "rhoInf" : self.rhoInf, 
+                       "discCentre" : discCentreLoc, "rcIndex" : 0, "xcIndex" : np.zeros(len(discAxialLocs))}
         
         #Compute event times for dynamic cases only
         if self.redFreq != 0.0:
             self.eventTimes(discAxialLocs)
-            self.matDict["phaseTimes"] = self.cumElapsedTimes        
+            self.matDict["phaseTimes"] = self.cumElapsedTimes
+            self.matDict["phaseAngles"] = self.phaseAngles
+            self.matDict["surgeVel"] = self.surgeVelTheory
+            self.matDict["surgeAccl"] = self.surgeAcclTheory
             
         for i, file in enumerate(fileList):
                         
@@ -92,6 +106,7 @@ class caseData:
             temp.combine2Frames()
             
             setattr(temp.combinedFrames,"phaseVinf",np.abs(temp.combinedFrames.recFstreamVelc()))
+            self.phaseVinf[i] = temp.combinedFrames.phaseVinf
             
             frameAxialLocs = temp.frameAxialLocs
             frameSpanLocs = temp.frameSpanLocs
@@ -106,13 +121,22 @@ class caseData:
             self.matDict[f"phase{phaseID+1}"] |= {"Vx" : temp.combinedFrames.gridVelX}
             self.matDict[f"phase{phaseID+1}"] |= {"Vr" : temp.combinedFrames.gridVelY}
             self.matDict[f"phase{phaseID+1}"] |= {"Vmag" : temp.combinedFrames.gridVel}
+            self.matDict[f"phase{phaseID+1}"] |= {"Vortz" : temp.combinedFrames.gridVortZ}
             self.matDict[f"phase{phaseID+1}"] |= {"Vinf" : temp.combinedFrames.phaseVinf}
+            self.matDict[f"phase{phaseID+1}"] |= {"maskBounds" : temp.maskBoundaryIndex(1,nearestValueIndex(frameSpanLocs, discCentreLoc),5)+1}
+            
+            '''self.matDict[f"phase{phaseID+1}"] |= {"X" : temp.frame1.gridPosX*1e-3}
+            self.matDict[f"phase{phaseID+1}"] |= {"Y" : temp.frame1.gridPosY*1e-3}
+            self.matDict[f"phase{phaseID+1}"] |= {"Vx" : temp.frame1.gridVelX}
+            self.matDict[f"phase{phaseID+1}"] |= {"Vr" : temp.frame1.gridVelY}
+            self.matDict[f"phase{phaseID+1}"] |= {"Vmag" : temp.frame1.gridVel}
+            self.matDict[f"phase{phaseID+1}"] |= {"Vortz" : temp.frame1.gridVortZ}'''
             
             setattr(self, f"phase{phaseID}", temp)
             
         #self.axialIndDistr = self.axialInd()
             
-        #self.cycleAxialInd = self.cycleAxialIndDistr(discCentreLoc, discAxialLocs)
+        #self.cycleAxialInd = self.cycleAxialIndDistr(discCentreLoc, discAxialLocs, distrSize=81)
             
     def saveAsMat(self, fileDir):
         
@@ -172,6 +196,13 @@ class caseData:
         #Cumulative elapsedTimes
         self.cumElapsedTimes = np.zeros(12)
         self.cumElapsedTimes[1:] = np.cumsum(elapsedTimes)
+        self.phaseAngles = np.arcsin(np.clip(-discLocsScaled/dispAmp,-1,1))
+        self.phaseAngles[3:8] = np.pi - self.phaseAngles[3:8]
+        self.phaseAngles[8:10] = 2*np.pi + self.phaseAngles[8:10]
+    
+        self.phaseAnglesTheory = 2*np.pi * np.linspace(0.05, 1.15, 12)
+        self.surgeVelTheory = -self.amp * 2 * np.pi * self.freq * np.cos(self.phaseAnglesTheory)#negative sign to follow same sign convention as piv field data
+        self.surgeAcclTheory = -self.amp * (2 * np.pi * self.freq)**2 * np.sin(self.phaseAnglesTheory)
         
         self.minLocTime = self.cumElapsedTimes[2]
         self.maxLocTime = self.cumElapsedTimes[7]
@@ -188,6 +219,7 @@ class caseData:
         arch.reducedSurgeAmplitude = self.redAmp
         arch.freestreamVelocity = self.fstreamVelc
         arch.phases = self.phaseQty
+        arch.phaseVinf = self.phaseVinf
         arch.cycleAxialInd = self.cycleAxialInd
         
         if self.redFreq != 0:
@@ -197,6 +229,7 @@ class caseData:
             arch.maxLocTime = self.maxLocTime
             arch.meanLocTime1 = self.meanLocTime1
             arch.meanLocTime2 = self.meanLocTime2
+            arch.phaseAngles = self.phaseAngles
         
         arch.saveAsJson(fileDir)           
             
@@ -211,7 +244,8 @@ class caseDataArch:
     reducedSurgeAmplitude: float = 0.0
     freestreamVelocity: float = 0.0
     phases: int = 12
-    spanLocs: np.float64 = np.zeros(phases)
+    phaseVinf: np.float64 = np.zeros(phases)
+    phaseAngles: np.float64 = np.zeros(phases)
     cycleAxialInd: Dict = field(default_factory=dict) #Initialization syntax for mutable objects like dict and list
     ndimTimes: np.float64 = np.zeros(phases)
     minLocTime: float = 0.0
