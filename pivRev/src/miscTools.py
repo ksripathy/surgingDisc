@@ -1,19 +1,123 @@
 import numpy as np
 from scipy import signal
+import math
 
-def optzFunction(phaseAngle, ioUtilsObj):
+def lowPassFilt(sig, sampleFreq, cutOffFreq):
     
-    from src.forcesRevised import aeroForces
-        
-    temp = aeroForces(ioUtilsObj.windObj, ioUtilsObj.noWindObj, 2, phaseAngle)
+    Wn = cutOffFreq/(0.5 * sampleFreq)
+    b, a = signal.butter(2, Wn)
     
-    return -np.max(temp.cycleAvgFiltForce)
+    return signal.filtfilt(b, a, sig)
+
+def curl2D(x,y,u,v,edgeOrder=2):
+    dx = x[0,:]
+    dy = y[:,0]
+
+    dummy, dFx_dy= np.gradient (u, dx, dy, axis=[1,0], edge_order=edgeOrder)
+    dFy_dx, dummy = np.gradient (v, dx, dy, axis=[1,0], edge_order=edgeOrder)
+
+    rot_z = dFy_dx - dFx_dy
+
+    return rot_z
+
+def curl(x,y,z,u,v,w):
+    dx = x[0,:,0]
+    dy = y[:,0,0]
+    dz = z[0,0,:]
+
+    dummy, dFx_dy, dFx_dz = np.gradient (u, dx, dy, dz, axis=[1,0,2])
+    dFy_dx, dummy, dFy_dz = np.gradient (v, dx, dy, dz, axis=[1,0,2])
+    dFz_dx, dFz_dy, dummy = np.gradient (w, dx, dy, dz, axis=[1,0,2])
+
+    rot_x = dFz_dy - dFy_dz
+    rot_y = dFx_dz - dFz_dx
+    rot_z = dFy_dx - dFx_dy
+
+    l = np.sqrt(np.power(u,2.0) + np.power(v,2.0) + np.power(w,2.0));
+
+    m1 = np.multiply(rot_x,u)
+    m2 = np.multiply(rot_y,v)
+    m3 = np.multiply(rot_z,w)
+
+    tmp1 = (m1 + m2 + m3)
+    tmp2 = np.multiply(l,2.0)
+
+    av = np.divide(tmp1, tmp2)
+
+    return rot_x, rot_y, rot_z, av
 
 def movingAverage(a, n=2):
     
     ret = np.cumsum(a, dtype=float)
     ret[n:] = ret[n:] - ret[:-n]
     return ret[n - 1:] / n
+
+def genPolygonLineBndry(points, lineDelta):
+        
+    if points.shape[0] > 2:
+    #Enclosing points 
+        points = np.append(points,np.array([points[0,:]]), axis=0)
+    
+    nDims = points.shape[1]
+    nSegs = points.shape[0] - 1
+    
+    dists = np.zeros(nSegs)
+    
+    for i in range(nSegs):
+        
+        dists[i] = math.dist(points[i,:],points[i+1,:])
+        
+    segSizes = (dists/lineDelta).astype(int) + 1
+    
+    lineSegs = np.empty(nSegs, dtype=np.ndarray)
+    cntrlPtSegs = np.empty(nSegs, dtype=np.ndarray)
+    
+    for i in range(nSegs):
+        
+        lineSeg = np.zeros((segSizes[i],nDims))
+        cntrlPtSeg = np.zeros((segSizes[i]-1,nDims))
+        
+        for j in range(nDims):
+            
+            lineSeg[:,j] = np.linspace(points[i,j],points[i+1,j],segSizes[i])
+            cntrlPtSeg[:,j] = movingAverage(lineSeg[:,j])
+            
+        lineSegs[i] = lineSeg
+        cntrlPtSegs[i] = cntrlPtSeg
+        
+    return lineSegs, cntrlPtSegs
+
+def genVector(pointsA,pointsB):
+    
+    vecAB = pointsB - pointsA
+    
+    dists = np.zeros(pointsA.shape[0])
+    
+    for i in range(len(dists)):
+        
+        dists[i] = math.dist(pointsA[i,:],pointsB[i,:])
+        
+    ndimVecAB = vecAB / np.column_stack((dists,dists))
+        
+    return ndimVecAB, dists
+
+def nrmlVector2D(pointsA,pointsB):
+    
+    ndimVecAB, dists = genVector(pointsA,pointsB)
+    
+    nrmlVecAB1 = np.array(ndimVecAB[:,[1,0]])
+    nrmlVecAB1[:,0] =  nrmlVecAB1[:,0] * -1
+    
+    nrmlVecAB2 = np.array(ndimVecAB[:,[1,0]])
+    nrmlVecAB2[:,1] =  nrmlVecAB1[:,1] * -1
+    
+    return nrmlVecAB1, nrmlVecAB2, dists
+
+def bool2DMinMax(boolArr):
+    
+    boolIndxs = np.argwhere(boolArr)
+    
+    return min(boolIndxs[:,0]), max(boolIndxs[:,0])+1, min(boolIndxs[:,1]), max(boolIndxs[:,1])+1
 
 #Function for obtaining array of attribute of multiple objects of same class organized as an array
 def attributeArray(objectArray, attribute, args=None):
@@ -27,6 +131,27 @@ def attributeArray(objectArray, attribute, args=None):
         
         return np.array([getattr(obj, attribute)(*args) for obj in objectArray])
     
+#Function to obtain the nearest value in a numpy array
+def nearestValueIndex(arr, arg):
+    
+    deltaArr = np.abs(arr - arg)
+    nearestIndex = np.argpartition(deltaArr,1)[0]
+    
+    return nearestIndex
+    
+#Function to resize axes bbox in a matplotlib figure
+def axesBboxSize(bboxWidth, bboxHeight, axesObj):
+    
+    leftBorder = axesObj.figure.subplotpars.left
+    rightBorder = axesObj.figure.subplotpars.right
+    topBorder = axesObj.figure.subplotpars.top
+    bottomBorder = axesObj.figure.subplotpars.bottom
+    
+    figWidth = float(bboxWidth)/(rightBorder - leftBorder)
+    figHeight = float(bboxHeight)/(topBorder - bottomBorder)
+    
+    axesObj.figure.set_size_inches(figWidth, figHeight)
+    
 #Function for finding time shift between signals
 def lagShift(sig1, sig2):
     
@@ -35,14 +160,6 @@ def lagShift(sig1, sig2):
     
     return lags[np.argmax(corr)], max(corr)
 
-#Function for finding time shift between signals based on max arg location
-def lagShiftv2(sig1, sig2):
-    
-    argMax1 = np.argmax(sig1)
-    argMax2 = np.argmax(sig2)
-    
-    return argMax1 - argMax2
-
 #Low pass filter function
 def lowPassFilt(sig, sampleFreq, cutOffFreq):
     
@@ -50,78 +167,6 @@ def lowPassFilt(sig, sampleFreq, cutOffFreq):
     b, a = signal.butter(2, Wn)
     
     return signal.filtfilt(b, a, sig)
-
-#Low pass filter function
-def highPassFilt(sig, sampleFreq, cutOffFreq):
-    
-    Wn = cutOffFreq/(0.5 * sampleFreq)
-    b, a = signal.butter(2, Wn, btype = "highpass")
-    
-    return signal.filtfilt(b, a, sig)
-
-#High pass filter
-def bandPassFilt(sig, sampleFreq, cutOffFreqs):
-    
-    Wn = cutOffFreqs/(0.5 * sampleFreq)
-    b, a = signal.butter(2, Wn, btype = "bandpass")
-    
-    return signal.filtfilt(b, a, sig)
-
-#Harmonic pass filter
-def harmonicPassFilt(sig, samplingFreq, fundFreq, harmonicsQty, nonWholeCrit=0.01):
-    
-    '''Smaller non-whole crit narrows down the region of frequency selection around the harmonics'''
-    
-    sampleQty = len(sig)
-    signalDuration = sampleQty/samplingFreq
-    sigMean = np.mean(sig)
-    
-    twoSideFreqs = np.arange(sampleQty)/signalDuration
-    freqs = twoSideFreqs[:sampleQty//2]
-    
-    #Filtering out dftFreqs less than half of first harmonic
-    freqs[np.argwhere(freqs < 0.5*fundFreq)] = np.NaN
-    
-    #Filtering out higher harmonics
-    freqs[np.argwhere(freqs // fundFreq > harmonicsQty)] = np.NaN
-    
-    #Secondary filtering of higher harmonics
-    freqs[np.argwhere(freqs / fundFreq > harmonicsQty+0.5)] = np.NaN
-    
-    #Filtering out non-whole multiples of harmonics
-    crit1 = freqs % fundFreq <= nonWholeCrit * fundFreq #Right bound criteria for freq harmonics
-    crit2 = freqs % fundFreq >= fundFreq * (1 - nonWholeCrit) #Left bound criteria for freq harmonics
-    freqs[np.argwhere(np.logical_not(np.logical_or(crit1, crit2)))] = np.NaN
-    
-    filtIndicesHalf1 = np.argwhere(np.isnan(freqs))
-    
-    filtIndicesHalf2 = np.flip(sampleQty - filtIndicesHalf1)
-    
-    filtIndices = np.concatenate((filtIndicesHalf1,filtIndicesHalf2[:-1]))
-    
-    dftSig = np.fft.fft(sig - sigMean)
-    
-    filtDftSig = np.array(dftSig)
-    filtDftSig[filtIndices] = 0
-    
-    filtSig = np.fft.ifft(filtDftSig) + sigMean
-    
-    return freqs, np.real(filtSig)
-
-def dftPlot(sig, samplingFreq, axObj, freqLimit, fundFreq=None, color="tab:blue"):
-    
-    freqs, amp = freqsSignal(sig - np.mean(sig), samplingFreq)
-    freqsTrim = freqs[np.argwhere(freqs < freqLimit)]
-    ampTrim = amp[np.argwhere(freqs < freqLimit)]
-    axObj.stem(freqsTrim, ampTrim, markerfmt=color, linefmt=color)
-    
-    if fundFreq != None:
-        
-        highestHarmonic = freqLimit // fundFreq
-        harmonicFreqs = np.arange(1,highestHarmonic+1) * fundFreq
-        axObj.vlines(harmonicFreqs, ymin=min(ampTrim), ymax=max(ampTrim), color="k", linestyle="--")
-        
-        
 
 #Function to trim the end of a signal with incomplete period
 def nonCycleTrim(sig, cycleSize, surgeCycleQty):
@@ -153,20 +198,6 @@ def freqsSignal(sig, samplingFreq):
     normSpectralPower = normSpectralPower[:sampleQty//2]
     
     return freqRange, normSpectralPower
-
-def freqsSignal2(sig, samplingFreq):
-    
-    sampleQty = len(sig)
-    signalDuration = sampleQty/samplingFreq
-    freqHarmonics = np.arange(sampleQty)
-    
-    twoSideFreqRange = freqHarmonics/signalDuration
-    freqRange = twoSideFreqRange[:sampleQty//2]
-    
-    normSpectralPower = np.fft.fft(sig)/sampleQty
-    # normSpectralPower = normSpectralPower[:sampleQty//2]
-    
-    return twoSideFreqRange, normSpectralPower*sampleQty
 
 #Cycle averaging
 def cycleAvg(cyclesArray):
@@ -209,39 +240,6 @@ def cycleAvgStd(cyclesArray):
         resStd[i] = np.std(temp)
         
     return resAvg, resStd
-
-#Function to average data pairs in an array whose values are symmetrically distributed wrt central index(midpoint)
-def symAvgArray(data):
-    
-    size = len(data)
-    
-    if size % 2:
-        
-        midIndex = int((size+1)/2) - 1
-        
-        res = np.zeros(midIndex+1)
-        
-        for i,j in zip(np.arange(len(res)),np.flip(np.arange(len(res)))):
-            
-            if j == midIndex:
-                
-                res[i] = data[j]
-                
-            else:
-                
-                res[i] = 0.5*(data[j] + data[-j-1])
-                
-    else:
-        
-        midIndex = int(size/2) - 1
-        
-        res = np.zeros(midIndex+1)
-        
-        for i,j in zip(np.arange(len(res)),np.flip(np.arange(len(res)))):
-            
-            res[i] = 0.5*(data[j] + data[-j-1])
-            
-    return res
 
 #Update function for cycle data animation
 def animFrameUpdate(frame, *fargs):
@@ -327,6 +325,7 @@ def animVortUpdate(frame, *fargs):
             funcReturnList.append(plotObj.tipVortLines[j])
             
         return tuple(funcReturnList)
+
             
             
             

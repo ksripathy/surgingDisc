@@ -54,7 +54,7 @@ p45Case7.save(plotDir)
 p70Case7 = caseData(dataDir + "/p70Case7*")
 p70Case7.save(plotDir)'''
 
-p45Case0 = caseData(dataDir + "/tecPlotNoStitch/p45Case0*")
+'''p45Case0 = caseData(dataDir + "/tecPlotNoStitch/p45Case0*")
 p45Case0.saveAsMat(dataDir + "/matlab")
 del p45Case0
 p45Case1 = caseData(dataDir + "/tecPlotNoStitch/p45Case1*")
@@ -71,15 +71,17 @@ p45Case4.saveAsMat(dataDir + "/matlab")
 del p45Case4
 p45Case5 = caseData(dataDir + "/tecPlotNoStitch/p45Case5*")
 p45Case5.saveAsMat(dataDir + "/matlab")
-del p45Case5
+del p45Case5'''
 p45Case6 = caseData(dataDir + "/tecPlotNoStitch/p45Case6*")
-p45Case6.saveAsMat(dataDir + "/matlab")
+#p45Case6.saveAsMat(dataDir + "/matlab")
+p45Case6.saveAsPickle(dataDir + "/pickle")
 del p45Case6
 p45Case7 = caseData(dataDir + "/tecPlotNoStitch/p45Case7*")
-p45Case7.saveAsMat(dataDir + "/matlab")
+#p45Case7.saveAsMat(dataDir + "/matlab")
+p45Case7.saveAsPickle(dataDir + "/pickle")
 del p45Case7
 
-p70Case0 = caseData(dataDir + "/tecPlotNoStitch/p70Case0*")
+'''p70Case0 = caseData(dataDir + "/tecPlotNoStitch/p70Case0*")
 p70Case0.saveAsMat(dataDir + "/matlab")
 
 p70Case1 = caseData(dataDir + "/tecPlotNoStitch/p70Case1*")
@@ -95,13 +97,15 @@ p70Case4 = caseData(dataDir + "/tecPlotNoStitch/p70Case4*")
 p70Case4.saveAsMat(dataDir + "/matlab")
 
 p70Case5 = caseData(dataDir + "/tecPlotNoStitch/p70Case5*")
-p70Case5.saveAsMat(dataDir + "/matlab")
+p70Case5.saveAsMat(dataDir + "/matlab")'''
 
 p70Case6 = caseData(dataDir + "/tecPlotNoStitch/p70Case6*")
-p70Case6.saveAsMat(dataDir + "/matlab")
+p70Case6.saveAsPickle(dataDir + "/pickle")
+#p70Case6.saveAsMat(dataDir + "/matlab")
 
 p70Case7 = caseData(dataDir + "/tecPlotNoStitch/p70Case7*")
-p70Case7.saveAsMat(dataDir + "/matlab")
+p70Case7.saveAsPickle(dataDir + "/pickle")
+#p70Case7.saveAsMat(dataDir + "/matlab")
 
 
 '''p70Case0 = caseData(dataDir + "/tecPlotNoStitch/p70Case0*")

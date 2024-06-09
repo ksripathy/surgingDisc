@@ -6,6 +6,8 @@ from dataclasses_json import dataclass_json
 from typing import Dict
 from scipy.io import savemat
 from piv.src.miscTools import nearestValueIndex
+import pickle
+import copy
 
 class caseData:
     
@@ -99,11 +101,14 @@ class caseData:
             self.matDict["surgeVel"] = self.surgeVelTheory
             self.matDict["surgeAccl"] = self.surgeAcclTheory
             
+        self.pickleDict = copy.deepcopy(self.matDict)
+            
         for i, file in enumerate(fileList):
                         
             phaseID = int(file.split(".")[0].split("_")[1])
             temp = planarPIVField(file)
             temp.combine2Frames()
+            #temp.fillMask(-1)
             
             setattr(temp.combinedFrames,"phaseVinf",np.abs(temp.combinedFrames.recFstreamVelc()))
             self.phaseVinf[i] = temp.combinedFrames.phaseVinf
@@ -113,8 +118,14 @@ class caseData:
             
             self.matDict["deltaX"] = (frameAxialLocs[1] - frameAxialLocs[0]) * 1e-3
             self.matDict["deltaY"] = (frameSpanLocs[0] - frameSpanLocs[1]) * 1e-3
+            self.pickleDict["deltaX"] = (frameAxialLocs[1] - frameAxialLocs[0]) * 1e-3
+            self.pickleDict["deltaY"] = (frameSpanLocs[0] - frameSpanLocs[1]) * 1e-3
+            
             self.matDict["rcIndex"] = nearestValueIndex(frameSpanLocs, discCentreLoc) + 1
-            self.matDict["xcIndex"][i] = nearestValueIndex(frameAxialLocs, discAxialLocs[i]) + 1 
+            self.matDict["xcIndex"][i] = nearestValueIndex(frameAxialLocs, discAxialLocs[i]) + 1
+            self.pickleDict["rcIndex"] = nearestValueIndex(frameSpanLocs, discCentreLoc)
+            self.pickleDict["xcIndex"][i] = nearestValueIndex(frameAxialLocs, discAxialLocs[i])
+            
             self.matDict |= {f"phase{phaseID+1}" : {}}
             self.matDict[f"phase{phaseID+1}"] |= {"X" : temp.combinedFrames.gridPosX*1e-3}
             self.matDict[f"phase{phaseID+1}"] |= {"Y" : temp.combinedFrames.gridPosY*1e-3}
@@ -123,7 +134,17 @@ class caseData:
             self.matDict[f"phase{phaseID+1}"] |= {"Vmag" : temp.combinedFrames.gridVel}
             self.matDict[f"phase{phaseID+1}"] |= {"Vortz" : temp.combinedFrames.gridVortZ}
             self.matDict[f"phase{phaseID+1}"] |= {"Vinf" : temp.combinedFrames.phaseVinf}
-            self.matDict[f"phase{phaseID+1}"] |= {"maskBounds" : temp.maskBoundaryIndex(1,nearestValueIndex(frameSpanLocs, discCentreLoc),5)+1}
+            
+            self.pickleDict |= {f"phase{phaseID}" : {}}
+            self.pickleDict[f"phase{phaseID}"] |= {"X" : temp.combinedFrames.gridPosX*1e-3}
+            self.pickleDict[f"phase{phaseID}"] |= {"Y" : temp.combinedFrames.gridPosY*1e-3}
+            self.pickleDict[f"phase{phaseID}"] |= {"Vx" : temp.combinedFrames.gridVelX}
+            self.pickleDict[f"phase{phaseID}"] |= {"Vr" : temp.combinedFrames.gridVelY}
+            self.pickleDict[f"phase{phaseID}"] |= {"Vmag" : temp.combinedFrames.gridVel}
+            self.pickleDict[f"phase{phaseID}"] |= {"Vortz" : temp.combinedFrames.gridVortZ}
+            self.pickleDict[f"phase{phaseID}"] |= {"ValidCells" : temp.combinedFrames.gridIsValid}
+            self.pickleDict[f"phase{phaseID}"] |= {"Vinf" : temp.combinedFrames.phaseVinf}
+            #self.matDict[f"phase{phaseID+1}"] |= {"maskBounds" : temp.maskBoundaryIndex(1,nearestValueIndex(frameSpanLocs, discCentreLoc),5)+1}
             
             '''self.matDict[f"phase{phaseID+1}"] |= {"X" : temp.frame1.gridPosX*1e-3}
             self.matDict[f"phase{phaseID+1}"] |= {"Y" : temp.frame1.gridPosY*1e-3}
@@ -137,6 +158,13 @@ class caseData:
         #self.axialIndDistr = self.axialInd()
             
         #self.cycleAxialInd = self.cycleAxialIndDistr(discCentreLoc, discAxialLocs, distrSize=81)
+        
+    def saveAsPickle(self, fileDir):
+        
+        with open(fileDir + "/" + self.uid[:8] + ".pickle","wb") as handle:
+            
+            pickle.dump(self.pickleDict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            
             
     def saveAsMat(self, fileDir):
         

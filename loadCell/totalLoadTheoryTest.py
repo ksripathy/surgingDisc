@@ -29,7 +29,7 @@ p70FstreamRho = np.array([1.196899, 1.198764, 1.198306, 1.194673, 1.192900, 1.18
 
 time = np.array([4e-5*i for i in range(2*25000)])
 area = 0.25 * np.pi * (20e-2)**2
-caseNo = 3
+caseNo = 5
 
 if caseNo < 3:
     

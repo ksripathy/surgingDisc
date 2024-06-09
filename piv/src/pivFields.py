@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.interpolate import interpn
+from scipy.interpolate import griddata
 from scipy.stats import linregress 
 import matplotlib.pyplot as plt
 from piv.src.pivFrames import pivFrames2D
@@ -48,6 +49,30 @@ class planarPIVField():
             
         self.combinedFrames = self.frame1.combineFrame(offsetFrame0, overlapSmoothing)
         self.overlapAxialIndices = self.combinedFrames.overlapIndicesX
+        
+    def fillMask(self, frameNo):
+        
+        if frameNo == -1:
+            frameObj = getattr(self,"combinedFrames")
+            
+        else:
+            frameObj = getattr(self,f"frame{frameNo}")
+            
+        frameX,frameY = np.meshgrid(self.frameAxialLocs,self.frameSpanLocs)
+        
+        frameValidX = frameX[frameObj.gridIsValid]
+        frameValidY = frameY[frameObj.gridIsValid]
+        
+        frameValidVelX = frameObj.gridVelX[frameObj.gridIsValid]
+        frameValidVelY = frameObj.gridVelY[frameObj.gridIsValid]
+        
+        frameObj.gridVelXFilled = np.array(frameObj.gridVelX)
+        frameObj.gridVelYFilled = np.array(frameObj.gridVelY)
+        
+        frameObj.gridVelXFilled[~frameObj.gridIsValid] = griddata((frameValidX,frameValidY),frameValidVelX.ravel(),(frameX[~frameObj.gridIsValid],frameY[~frameObj.gridIsValid]), method="cubic")
+        frameObj.gridVelYFilled[~frameObj.gridIsValid] = griddata((frameValidX,frameValidY),frameValidVelY.ravel(),(frameX[~frameObj.gridIsValid],frameY[~frameObj.gridIsValid]), method="cubic")
+        
+        frameObj.gridVelFilled = np.sqrt(frameObj.gridVelXFilled**2 + frameObj.gridVelYFilled**2)
         
     def maskBoundaryIndex(self, frameNo, spanIndex, calbEdgeArtifactTrim = 0):
         

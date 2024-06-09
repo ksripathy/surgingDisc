@@ -91,6 +91,45 @@ p70Case4 = dynInflow(4)
 p70Case5 = dynInflow(5)
 
 defaultLocs = [0,1,3,4,5,6,8,9,10,11]
+phases = [r"$18\degree$",r"$54\degree$",r"$90\degree$",r"$126\degree$",
+          r"$162\degree$",r"$198\degree$",r"$234\degree$",r"$270\degree$",
+          r"$306\degree$",r"$342\degree$"]
+
+fig,ax = plt.subplots(ncols=2)
+fig.set_size_inches(26/2.54, 10/2.54)
+ax[0].plot(p70Case0.surgeVelTheory,1 - p70Case0.discVelDynTheory, label="case0")
+ax[0].plot(p70Case1.surgeVelTheory,1 - p70Case0.discVelDynTheory, label="case1")
+ax[0].plot(p70Case0.surgeVel,1 - p70Case0.discVelDyn[40], marker = "o",linestyle=":",color=ax[0].lines[0].get_color())
+ax[0].plot(p70Case1.surgeVel,1 - p70Case1.discVelDyn[40], marker = "o",linestyle=":",color=ax[0].lines[1].get_color())
+ax[0].legend()
+ax[0].set_xlabel(r"$V_{sur}/V_{\infty}\ [-]$")
+ax[0].set_ylabel(r"$v_D/V_{\infty}\ [-]$")
+for x,y,z in zip(p70Case0.surgeVel[:10],1 - p70Case0.discVelDyn[40][:10],range(10)):
+    ax[0].text(x,y,phases[z],color="k",fontsize=12)
+ax[1].plot(p70Case3.surgeVelTheory,1 - p70Case3.discVelDynTheory, label="case3")
+ax[1].plot(p70Case4.surgeVelTheory,1 - p70Case4.discVelDynTheory, label="case4")
+ax[1].plot(p70Case3.surgeVel,1 - p70Case3.discVelDyn[40], marker = "o",linestyle=":",color=ax[1].lines[0].get_color())
+ax[1].plot(p70Case4.surgeVel,1 - p70Case4.discVelDyn[40], marker = "o",linestyle=":",color=ax[1].lines[1].get_color())
+ax[1].legend()
+ax[1].set_xlabel(r"$V_{sur}/V_{\infty}\ [-]$")
+for x,y,z in zip(p70Case3.surgeVel[:9],1 - p70Case3.discVelDyn[40][:9],range(9)):
+    ax[1].text(x,y,phases[z],color="k",fontsize=12)
+fig.savefig("dynInflowTorque24.png", dpi=300, bbox_inches="tight", pad_inches=0)
+
+fig0,ax0 = plt.subplots(ncols=2)
+fig0.set_size_inches(26/2.54, 10/2.54)
+ax0[0].plot(p70Case1.surgeVelTheory,1 - p70Case1.discVelDynTheory, label="case1")
+ax0[0].plot(p70Case2.surgeVelTheory,1 - p70Case2.discVelDynTheory, label="case2")
+ax0[0].plot(p70Case3.surgeVelTheory,1 - p70Case3.discVelDynTheory, label="case3")
+ax0[0].plot(p70Case1.surgeVel,1 - p70Case1.discVelDyn[40], marker = "x",markevery=defaultLocs,linestyle=":",color=ax0[0].lines[0].get_color())
+ax0[0].plot(p70Case2.surgeVel,1 - p70Case2.discVelDyn[40], marker = "x",markevery=defaultLocs,linestyle=":",color=ax0[0].lines[1].get_color())
+ax0[0].plot(p70Case3.surgeVel,1 - p70Case3.discVelDyn[40], marker = "x",markevery=defaultLocs,linestyle=":",color=ax0[0].lines[2].get_color())
+ax0[0].plot(p70Case1.surgeVel[2],1 - p70Case1.discVelDyn[40][2],marker="o",markerfacecolor="g", color="k", linestyle="None", label = r"$90\degree phase$")
+ax0[0].plot(p70Case1.surgeVel[7],1 - p70Case1.discVelDyn[40][7],marker="o",markerfacecolor="r", color="k", linestyle="None", label = r"$270\degree phase$")
+ax0[0].plot(p70Case2.surgeVel[2],1 - p70Case2.discVelDyn[40][2],marker="o",markerfacecolor="g", color="k", linestyle="None")
+ax0[0].plot(p70Case2.surgeVel[7],1 - p70Case2.discVelDyn[40][7],marker="o",markerfacecolor="r", color="k", linestyle="None")
+ax0[0].plot(p70Case3.surgeVel[2],1 - p70Case3.discVelDyn[40][2],marker="o",markerfacecolor="g", color="k", linestyle="None")
+ax0[0].plot(p70Case3.surgeVel[7],1 - p70Case3.discVelDyn[40][7],marker="o",markerfacecolor="r", color="k", linestyle="None")
 
 fig1, ax1 = plt.subplots(nrows=3,ncols=2)
 fig1.set_size_inches(26/2.54, 30/2.54)
