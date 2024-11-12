@@ -1,4 +1,4 @@
-name: devEnv
+name: omniwind-2410
 channels:
   - conda-forge
   - defaults
